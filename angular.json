@@ -132,5 +132,8 @@
       }
     }
   },
-  "defaultProject": "premium-map-frontend"
+  "defaultProject": "premium-map-frontend",
+  "cli": {
+    "analytics": false
+  }
 }
