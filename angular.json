@@ -79,18 +79,18 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "premium-map-frontend:build"
+            "buildTarget": "premium-map-frontend:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "premium-map-frontend:build:production"
+              "buildTarget": "premium-map-frontend:build:production"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "premium-map-frontend:build"
+            "buildTarget": "premium-map-frontend:build"
           }
         },
         "test": {
