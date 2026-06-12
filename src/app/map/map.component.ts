@@ -1,6 +1,6 @@
 import { Component, OnInit } from "@angular/core";
 import { Subject } from "rxjs";
-import * as L from "leaflet";
+import L from "leaflet";
 import "leaflet.markercluster";
 import { SelectItem } from "../dropdown/dropdown.component";
 import { SearchResult, Item, SearchService } from "../search.service";
@@ -203,7 +203,7 @@ export class MapComponent implements OnInit {
       this.markerClusterGroup.clearLayers();
     }
 
-    this.markerClusterGroup = L.markerClusterGroup({
+    this.markerClusterGroup = (window as any).L.markerClusterGroup({
       maxClusterRadius: 60,
       polygonOptions: {
         fillColor: "#000",
@@ -302,7 +302,7 @@ export class MapComponent implements OnInit {
       }
     });
 
-    if (this.map) {
+    if (this.map && this.markerClusterGroup) {
       this.markerClusterGroup.addTo(this.map);
     }
 
