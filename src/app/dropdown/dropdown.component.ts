@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 
 export interface SelectItem {
   id: string;
@@ -11,10 +11,8 @@ export interface SelectItem {
     selector: 'app-dropdown',
     templateUrl: './dropdown.component.html',
     styleUrls: ['./dropdown.component.css'],
-    changeDetection: ChangeDetectionStrategy.Eager,
-    standalone: false
 })
-export class DropdownComponent implements OnInit {
+export class DropdownComponent {
   @Output() selectItemValueChanged = new EventEmitter<SelectItem>();
 
   @Input()
@@ -24,9 +22,7 @@ export class DropdownComponent implements OnInit {
   public minWidth: string;
 
   @Input()
-  public selectItems: {
-    [id: string]: SelectItem;
-  };
+  public selectItems: Record<string, SelectItem>;
   public isDropdown = false;
 
   public getSelectItems(): SelectItem[] {
@@ -47,8 +43,4 @@ export class DropdownComponent implements OnInit {
     this.selectItems = {};
     this.minWidth = "0";
   }
-
-  ngOnInit(): void {
-  }
-
 }

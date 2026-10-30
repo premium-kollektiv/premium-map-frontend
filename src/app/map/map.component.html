@@ -8,36 +8,45 @@
         <i class="fa fa-search" aria-hidden="true"></i>
       </button>
       <div class="searchResults">
-        @for (searchResult of (searchResults | slice: 0:3); track searchResult) {
-          <div class="searchResult"
-            (click)="router.navigate([searchResult.id])">
-            <img src="assets/svg-icons/{{ searchService.mapShopTypesToImage(['1']) }}" />
+        @for (searchResult of (searchResults() | slice: 0:3); track searchResult) {
+          <div class="searchResult" role="button" tabindex="0"
+            (click)="router.navigate([searchResult.id])" (keydown.enter)="router.navigate([searchResult.id])"
+            (keydown.space)="$event.preventDefault(); router.navigate([searchResult.id])">
+            <img src="assets/svg-icons/{{ searchService.mapShopTypesToImage(['1']) }}" alt="" />
             <div class="address">
               <h3>{{ searchResult.name }}</h3>
               {{ searchResult.street }}, {{ searchResult.zip }}
               {{ searchResult.city }}
             </div>
-            @if (homePosition) {
+            @if (homePosition(); as position) {
               <div class="homePosition">
-                {{ distanceByLatLong(searchResult.lat, searchResult.lng, homePosition.latitude, homePosition.longitude) }} km
+                {{ distanceByLatLong(searchResult.lat, searchResult.lng, position.latitude, position.longitude) }} km
               </div>
             }
           </div>
         }
       </div>
     </div>
-    <a (click)="toggleLegend()">?</a>
+    <a role="button" tabindex="0" aria-label="Legende"
+      (click)="toggleLegend()" (keydown.enter)="toggleLegend()"
+      (keydown.space)="$event.preventDefault(); toggleLegend()">?</a>
   </div>
 
   <div class="filter">
     <span class="group">
-      <div [class.active]="countriesState.DE" (click)="toggleCountry('DE')">
+      <div [class.active]="countriesState.DE" role="button" tabindex="0" [attr.aria-pressed]="countriesState.DE"
+        (click)="toggleCountry('DE')" (keydown.enter)="toggleCountry('DE')"
+        (keydown.space)="$event.preventDefault(); toggleCountry('DE')">
         DE
       </div>
-      <div [class.active]="countriesState.AT" (click)="toggleCountry('AT')">
+      <div [class.active]="countriesState.AT" role="button" tabindex="0" [attr.aria-pressed]="countriesState.AT"
+        (click)="toggleCountry('AT')" (keydown.enter)="toggleCountry('AT')"
+        (keydown.space)="$event.preventDefault(); toggleCountry('AT')">
         AT
       </div>
-      <div [class.active]="countriesState.CH" (click)="toggleCountry('CH')">
+      <div [class.active]="countriesState.CH" role="button" tabindex="0" [attr.aria-pressed]="countriesState.CH"
+        (click)="toggleCountry('CH')" (keydown.enter)="toggleCountry('CH')"
+        (keydown.space)="$event.preventDefault(); toggleCountry('CH')">
         CH
       </div>
     </span>

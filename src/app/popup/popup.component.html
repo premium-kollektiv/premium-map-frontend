@@ -1,6 +1,8 @@
 <div class="content">
-    <a (click)="navigateHome()">
-        <i class="fa fa-times"></i>
+    <a role="button" tabindex="0" aria-label="Schließen"
+        (click)="navigateHome()" (keydown.enter)="navigateHome()"
+        (keydown.space)="$event.preventDefault(); navigateHome()">
+        <i class="fa fa-times" aria-hidden="true"></i>
     </a>
     <ng-content></ng-content>
 </div>

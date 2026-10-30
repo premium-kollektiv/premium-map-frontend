@@ -1,12 +1,16 @@
 <div class="wrapper" [style.min-width]="minWidth">
-  <span class="select active" [class.active]="isDropdown" (click)="openDropdown()">{{ selectMessage }}
+  <span class="select active" [class.active]="isDropdown" role="button" tabindex="0" [attr.aria-expanded]="isDropdown"
+    (click)="openDropdown()" (keydown.enter)="openDropdown()"
+    (keydown.space)="$event.preventDefault(); openDropdown()">{{ selectMessage }}
     <i class="fa fa-caret-down" aria-hidden="true"></i>
   </span>
   @for (selectItem of getSelectItems(); track selectItem) {
-    <a [class.disabled]="!selectItems[selectItem.id].value"
-      (click)="toggleProperty(selectItem.id)">
+    <a [class.disabled]="!selectItems[selectItem.id].value" role="button" tabindex="0"
+      [attr.aria-pressed]="selectItems[selectItem.id].value"
+      (click)="toggleProperty(selectItem.id)" (keydown.enter)="toggleProperty(selectItem.id)"
+      (keydown.space)="$event.preventDefault(); toggleProperty(selectItem.id)">
       @if (selectItems[selectItem.id].icon) {
-        <img height="32" width="28" src="assets/svg-icons/{{ selectItems[selectItem.id].icon }}" />
+        <img height="32" width="28" src="assets/svg-icons/{{ selectItems[selectItem.id].icon }}" alt="" />
       }
       {{ selectItem.name }}
     </a>

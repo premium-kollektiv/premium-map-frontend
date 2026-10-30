@@ -1,22 +1,15 @@
 import { Location } from '@angular/common';
-import { Component, OnInit, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject } from '@angular/core';
 
 @Component({
     selector: 'app-popup',
     templateUrl: './popup.component.html',
     styleUrls: ['./popup.component.css'],
-    changeDetection: ChangeDetectionStrategy.Eager,
-    standalone: false
 })
-export class PopupComponent implements OnInit {
-
-  constructor(private location: Location) { }
-
-  ngOnInit(): void {
-  }
+export class PopupComponent {
+  private location = inject(Location);
 
   public navigateHome() {
     this.location.back();
   }
-
 }

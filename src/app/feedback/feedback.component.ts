@@ -1,25 +1,24 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Params } from "@angular/router";
 import { FeedbackService } from '../feedback.service';
 import { filter } from 'rxjs/operators';
+import { PopupComponent } from '../popup/popup.component';
+import { FormsModule } from '@angular/forms';
 
 @Component({
     selector: 'app-feedback',
     templateUrl: './feedback.component.html',
     styleUrls: ['./feedback.component.css'],
-    changeDetection: ChangeDetectionStrategy.Eager,
-    standalone: false
+    imports: [PopupComponent, FormsModule]
 })
-export class FeedbackComponent implements OnInit {
+export class FeedbackComponent {
+  private route = inject(ActivatedRoute);
+  private feedbackService = inject(FeedbackService);
 
   public feedbackEmail = "";
   public feedbackText = "";
-  public feedbackSentMessage: string | null = "";
-
-  constructor(private route: ActivatedRoute, private feedbackService: FeedbackService) { }
-
-  ngOnInit(): void {
-  }
+  // A signal, so the OnPush view re-renders when the HTTP response arrives
+  public feedbackSentMessage = signal<string | null>("");
 
   public sendFeedback() {
     this.route.params
@@ -27,10 +26,10 @@ export class FeedbackComponent implements OnInit {
       .subscribe((params: Params) => {
         this.feedbackService
           .sendFeedback(params.itemId, this.feedbackEmail, this.feedbackText)
-          .subscribe((response: { status: number; data: { msg: string } }) => {
-            this.feedbackSentMessage = response.data.msg;
+          .subscribe((response) => {
             this.feedbackEmail = '';
             this.feedbackText = '';
+            this.feedbackSentMessage.set(response.data.msg);
           });
       });
   }

@@ -1,18 +1,18 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 
 @Injectable()
 export class SearchService {
+  private http = inject(HttpClient);
+
   // private host = "http://localhost:8085";
   private host = 'https://api.landkarte.premium-cola.de';
   private searchPath = '/search';
   private itemListPath = '/item/list';
   private itemAllPath = '/item/all';
   private itemDetailsPath = '/item';
-
-  constructor(private http: HttpClient) {}
 
   /**
    * @param keyword the keyword to search for
@@ -23,13 +23,13 @@ export class SearchService {
       url += `/${keyword}`;
     }
     return this.http
-      .get<any>(url)
-      .pipe(map(res => res.data.items as SearchResult[]));
+      .get<ApiResponse<{ items: SearchResult[] }>>(url)
+      .pipe(map(res => res.data.items));
   }
 
   public itemDetails(id: number): Observable<Item> {
     const url = `${this.host}${this.itemDetailsPath}/${id}`;
-    return this.http.get<any>(url).pipe(map(res => res.data as Item));
+    return this.http.get<ApiResponse<Item>>(url).pipe(map(res => res.data));
   }
 
   // https://<host>/item/list?types[]=haendler&types[]=sprecher&types[]=webshop
@@ -37,30 +37,30 @@ export class SearchService {
     types: string[],
     countries: string[],
     products: string[]
-  ): Observable<any[]> {
+  ): Observable<ItemListEntry[]> {
     let url = `${this.host}${this.itemListPath}`;
     url += `?types[]=${types.join('&types[]=')}`;
     url += `&countries[]=${countries.join('&countries[]=')}`;
     url += `&products[]=${products.join('&products[]=')}`;
     return this.http
-      .get<any>(url)
-      .pipe(map(itemList => itemList.data as any[]));
+      .get<ApiResponse<ItemListEntry[]>>(url)
+      .pipe(map(itemList => itemList.data));
   }
 
-  public itemAll() {
+  public itemAll(): Observable<ItemListEntry[]> {
     const url = `${this.host}${this.itemAllPath}`;
     return this.http
-      .get<any>(url)
-      .pipe(map(itemList => itemList.data as any[]));
+      .get<ApiResponse<ItemListEntry[]>>(url)
+      .pipe(map(itemList => itemList.data));
   }
 
   /**
    * This function returns the svg filename for the specified shop type list
    * which is than used in the search result.
    *
-   * @param shopTypes A list of shop types e.g.: ["3", "2"]
+   * @param shopTypes A list of shop types e.g.: ["3", "2"] or [3, 2]
    */
-  public mapShopTypesToImage(shopTypes: Array<string>) {
+  public mapShopTypesToImage(shopTypes: (string | number)[]) {
     const normalizedShopTypes: string[] = [];
     shopTypes.map(item => {
       normalizedShopTypes.push(`${item}`);
@@ -138,13 +138,22 @@ export class SearchService {
   }
 }
 
+/** Envelope the API wraps every response in */
+export interface ApiResponse<T> {
+  status: number;
+  data: T;
+}
+
+/** One entry of /item/list, e.g. [67934, [52.51, 13.31], [1, 2]] */
+export type ItemListEntry = [id: number, latLng: [number, number], shopTypes: number[]];
+
 export interface SearchResult {
   id: number;
   email: string;
   lat: string;
   lng: string;
   name: string;
-  offertypes: Array<string>;
+  offertypes: string[];
   uri: string;
   web: string;
   city: string;

@@ -1,6 +1,6 @@
 <app-popup>
   <h1>Feedback</h1>
-  @if (!feedbackSentMessage) {
+  @if (!feedbackSentMessage()) {
     <div>
       <div class="info">
         Ist Dir ein Fehler aufgefallen? Gib uns gerne bescheid...
@@ -10,9 +10,9 @@
       <button (click)="sendFeedback()">Absenden</button>
     </div>
   }
-  @if (feedbackSentMessage) {
+  @if (feedbackSentMessage()) {
     <div>
-      <div class="info">{{ feedbackSentMessage }}</div>
+      <div class="info">{{ feedbackSentMessage() }}</div>
     </div>
   }
 </app-popup>

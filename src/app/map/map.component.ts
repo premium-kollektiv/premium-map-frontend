@@ -1,35 +1,40 @@
-import { Component, OnInit, ChangeDetectionStrategy } from "@angular/core";
+import { Component, OnInit, inject, signal } from "@angular/core";
 import { Subject } from "rxjs";
 import L from "leaflet";
 import "leaflet.markercluster";
-import { SelectItem } from "../dropdown/dropdown.component";
-import { SearchResult, Item, SearchService } from "../search.service";
+import { SelectItem, DropdownComponent } from "../dropdown/dropdown.component";
+import { SearchResult, Item, ItemListEntry, SearchService } from "../search.service";
 import { ActivatedRoute, Router, Params } from "@angular/router";
 import { debounceTime } from "rxjs/operators";
 import { createCustomLeafletControl } from './CustomLeafletControl';
 import { distanceByLatLong } from './distanceByLatLong';
+import { SlicePipe } from "@angular/common";
 
 @Component({
     selector: "app-map",
     templateUrl: "./map.component.html",
     styleUrls: ["./map.component.css"],
-    changeDetection: ChangeDetectionStrategy.Eager,
-    standalone: false
+    imports: [DropdownComponent, SlicePipe]
 })
 export class MapComponent implements OnInit {
+  private route = inject(ActivatedRoute);
+  searchService = inject(SearchService);
+  router = inject(Router);
+
   private map: L.Map | undefined;
   private markerClusterGroup: L.MarkerClusterGroup | undefined;
   private defaultHomePosition: L.LatLng = L.latLng(
     50.93766174471314,
     9.777832031250002,
   );
-  public homePosition: GeolocationCoordinates | undefined = undefined;
+  // Signals, so the OnPush view re-renders when these change in async callbacks
+  public homePosition = signal<GeolocationCoordinates | undefined>(undefined);
 
   private defaultZoomLevel = 7;
   private defaultZoomLevelToHome = 12;
 
   // State of the offertypes in the top bar
-  public offertypes: { [id: string]: SelectItem } = {
+  public offertypes: Record<string, SelectItem> = {
     laeden: {
       id: "laeden",
       name: "Laden",
@@ -56,7 +61,7 @@ export class MapComponent implements OnInit {
     },
   };
 
-  public products: { [id: string]: SelectItem } = {
+  public products: Record<string, SelectItem> = {
     cola: {
       id: "cola",
       name: "Cola",
@@ -79,24 +84,20 @@ export class MapComponent implements OnInit {
     },
   };
 
-  public countriesState: { [id: string]: boolean } = {
+  public countriesState: Record<string, boolean> = {
     DE: true,
     AT: true,
     CH: true,
   };
 
-  private itemList: any[];
+  private itemList: ItemListEntry[];
 
-  public debounceSearchInput: Subject<string> = new Subject();
-  public searchResults: SearchResult[] = [];
+  public debounceSearchInput = new Subject<string>();
+  public searchResults = signal<SearchResult[]>([]);
 
   public selectedItem: Item | undefined;
 
-  constructor(
-    private route: ActivatedRoute,
-    public searchService: SearchService,
-    public router: Router,
-  ) {
+  constructor() {
     this.itemList = [];
   }
 
@@ -123,9 +124,11 @@ export class MapComponent implements OnInit {
     this.route.queryParams
       .subscribe((queryParams: Params) => {
         if (queryParams['userPosition']) {
-          this.map && this.centerMapOnUserPosition(this.map);
+          if (this.map) {
+            this.centerMapOnUserPosition(this.map);
+          }
         } else {
-          this.map && this.map.setView(this.defaultHomePosition, this.defaultZoomLevel);
+          this.map?.setView(this.defaultHomePosition, this.defaultZoomLevel);
         }
       })
 
@@ -162,7 +165,7 @@ export class MapComponent implements OnInit {
     // Add home control button
     const homeControl = createCustomLeafletControl("bottomleft", "home", () => {
       if (this.router.isActive("/", true /* exact */)) {
-        this.map && this.map.setView(this.defaultHomePosition, this.defaultZoomLevel);
+        this.map?.setView(this.defaultHomePosition, this.defaultZoomLevel);
       } else {
         this.router.navigateByUrl("/");
       }
@@ -177,7 +180,7 @@ export class MapComponent implements OnInit {
 
     // Hide search results on map clicked event
     this.map.addEventListener("click", () => {
-      this.searchResults = [];
+      this.searchResults.set([]);
     });
   }
 
@@ -186,7 +189,7 @@ export class MapComponent implements OnInit {
       return;
     }
     navigator.geolocation.getCurrentPosition((position) => {
-      this.homePosition = position.coords;
+      this.homePosition.set(position.coords);
       const latlng = new L.LatLng(position.coords.latitude, position.coords.longitude);
       map.setView(latlng, this.defaultZoomLevelToHome);
     }, () => {
@@ -205,7 +208,9 @@ export class MapComponent implements OnInit {
       this.markerClusterGroup.clearLayers();
     }
 
-    this.markerClusterGroup = (window as any).L.markerClusterGroup({
+    // leaflet.markercluster registers itself on the global `L`
+    const globalL = (window as unknown as { L: typeof L }).L;
+    this.markerClusterGroup = globalL.markerClusterGroup({
       maxClusterRadius: 60,
       polygonOptions: {
         fillColor: "#000",
@@ -216,9 +221,8 @@ export class MapComponent implements OnInit {
       },
     });
 
-    this.itemList.map((item: any[]) => {
-      let marker: CustomMarker;
-      marker = new CustomMarker(
+    this.itemList.map((item) => {
+      const marker = new CustomMarker(
         item[0],
         L.latLng(item[1][0], item[1][1]),
         {
@@ -250,8 +254,7 @@ export class MapComponent implements OnInit {
         }
       });
 
-      marker.addEventListener("popupopen", (event: L.LeafletEvent) => {
-        const eventMarker: CustomMarker = event.target as CustomMarker;
+      marker.addEventListener("popupopen", () => {
         this.searchService
           .itemDetails(marker.getId())
           .subscribe((itemDetails: Item) => {
@@ -317,7 +320,7 @@ export class MapComponent implements OnInit {
     this.searchService
       .search(searchKeyword)
       .subscribe((searchResults: SearchResult[]) => {
-        this.searchResults = searchResults;
+        this.searchResults.set(searchResults);
       });
   }
 
@@ -336,14 +339,14 @@ export class MapComponent implements OnInit {
     if (typeof itemId === "string") {
       itemId = parseInt(itemId, 10);
     }
-    if (this.searchResults) {
+    if (this.searchResults()) {
       this.clearSearchResults();
     }
     if (this.markerClusterGroup && this.map) {
       const targetMarker: L.Layer | undefined = this.markerClusterGroup
         .getLayers()
-        .find((layer: any) => {
-          return itemId === layer.getId();
+        .find((layer) => {
+          return itemId === (layer as CustomMarker).getId();
         });
       if (targetMarker) {
         const marker = targetMarker as CustomMarker;
@@ -402,7 +405,7 @@ export class MapComponent implements OnInit {
     });
   }
 
-  public enabledCountries(): Array<string> {
+  public enabledCountries(): string[] {
     const enabledCountries = [];
     for (const country in this.countriesState) {
       if (this.countriesState[country]) {
@@ -437,7 +440,7 @@ export class MapComponent implements OnInit {
   }
 
   public clearSearchResults() {
-    this.searchResults = [];
+    this.searchResults.set([]);
     this.debounceSearchInput.next("");
   }
 }
